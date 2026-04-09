@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline Multiplayer Ludo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            padding: 20px;
+            max-width: 1000px;
+            width: 100%;
+            max-height: 95vh;
+            overflow: hidden;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .header h1 {
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .setup-screen, .game-screen {
+            display: none;
+        }
+
+        .setup-screen.active, .game-screen.active {
+            display: block;
+        }
+
+        .player-setup {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .player-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            border: 3px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .player-card.active {
+            border-color: #4299e1;
+            transform: scale(1.05);
+        }
+
+        .player-colors {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .color-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 4px solid white;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .color-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .color-btn.selected {
+            transform: scale(1.2);
+            box-shadow: 0 0 20px currentColor;
+        }
+
+        .red { background: #ff4444; }
+        .green { background: #44ff44; }
+        .blue { background: #4444ff; }
+        .yellow { background: #ffff44; }
+
+        .btn {
+            padding: 15px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #4299e1, #3182ce);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(66, 153, 225, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(45deg, #48bb78, #38a169);
+            color: white;
+        }
+
+        .ludo-board {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1;
+            background: #f0f0f0;
+            border: 8px solid #2d3748;
+            border-radius: 12px;
+            margin: 20px auto;
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.1), 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .home-area {
+            position: absolute;
+            width: 28%;
+            height: 28%;
+            border: 4px solid;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .home-0 { top: 4%; left: 4%; background: rgba(255,68,68,0.2); border-color: #ff4444; }
+        .home-1 { top: 4%; right: 4%; background: rgba(68,255,68,0.2); border-color: #44ff44; }
+        .home-2 { bottom: 4%; right: 4%; background: rgba(68,68,255,0.2); border-color: #4444ff; }
+        .home-3 { bottom: 4%; left: 4%; background: rgba(255,255,68,0.2); border-color: #ffff44; }
+
+        .path-cell {
+            position: absolute;
+            width: 6.5%;
+            height: 6.5%;
+            background: #e2e8f0;
+            border: 1px solid #cbd5e0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        .safe-cell {
+            background: radial-gradient(circle, gold, orange);
+            border-radius: 50%;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .dice-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .dice {
+            width: 90px;
+            height: 90px;
+            background: linear-gradient(145deg, #667eea, #764ba2);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            user-select: none;
+        }
+
+        .dice:hover {
+            transform: translateY(-5px) scale(1.05);
+        }
+
+        .dice.rolling {
+            animation: diceRoll 1s ease-in-out;
+        }
+
+        @keyframes diceRoll {
+            0%, 100% { transform: rotateX(0) rotateY(0) rotateZ(0); }
+            25% { transform: rotateX(90deg) rotateY(90deg); }
+            50% { transform: rotateX(180deg) rotateY(180deg); }
+            75% { transform: rotateX(270deg) rotateY(270deg); }
+        }
+
+        .roll-btn {
+            padding: 18px 40px;
+            font-size: 20px;
+            background: linear-gradient(45deg, #f093fb, #f5576c);
+            color: white;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .roll-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .player-info {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .player-status {
+            padding: 15px;
+            border-radius: 12px;
+            min-width: 140px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .player-status.current-turn {
+            background: rgba(255,255,0,0.3);
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(255,255,0,0.5);
+        }
+
+        .piece {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            border: 3px solid white;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            position: absolute;
+            z-index: 20;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+
+        .piece:hover {
+            transform: scale(1.3);
+        }
+
+        .piece.movable {
+            box-shadow: 0 0 20px #00ff88;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 20px #00ff88; }
+            50% { box-shadow: 0 0 30px #00ff88, 0 0 40px #00ff88; }
+        }
+
+        .piece-0 { background: #ff4444; }
+        .piece-1 { background: #44ff44; }
+        .piece-2 { background: #4444ff; }
+        .piece-3 { background: #ffff44; }
+
+        .status {
+            font-size: 20px;
+            font-weight: bold;
+            min-height: 30px;
+            text-align: center;
+            color: #2d3748;
+        }
+
+        .winner-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .winner-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 50px;
+            border-radius: 25px;
+            text-align: center;
+            max-width: 400px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+            animation: winnerSlide 0.8s ease-out;
+        }
+
+        @keyframes winnerSlide {
+            from { transform: scale(0.5) rotateY(90deg); opacity: 0; }
+            to { transform: scale(1) rotateY(0); opacity: 1; }
+        }
+
+        @media (max-width: 768px) {
+            .player-setup {
+                grid-template-columns: 1fr;
+            }
+            .dice {
+                width: 70px;
+                height: 70px;
+                font-size: 28px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Setup Screen -->
+        <div class="setup-screen active" id="setupScreen">
+            <div class="header">
+                <h1>🎲 Ludo Kings</h1>
+                <p>Setup your players (2-4 players)</p>
+            </div>
+            
+            <div class="player-setup" id="playerSetup">
+                <!-- Player cards will be generated here -->
+            </div>
+            
+            <div style="text-align: center; margin: 30px 0;">
+                <button class="btn btn-primary" id="startGameBtn" disabled>Start Game</button>
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div class="game-screen" id="gameScreen">
+            <div class="header">
+                <h1>🎲 Ludo Battle</h1>
+            </div>
+            
+            <div class="player-info" id="playerInfo">
+                <!-- Player status will be here -->
+            </div>
+            
+            <div class="ludo-board" id="gameBoard"></div>
+            
+            <div class="controls">
+                <div class="dice-container">
+                    <div class="dice" id="dice">🎲</div>
+                    <button class="roll-btn" id="rollBtn">Roll Dice</button>
+                </div>
+                <div class="status" id="gameStatus">Pass device to Player 1</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class OfflineLudo {
+            constructor() {
+                this.players = [];
+                this.currentPlayerIndex = 0;
+                this.diceValue = 0;
+                this.gameBoard = null;
+                this.pieces = {};
+                this.selectedPiece = null;
+                this.gameWon = false;
+                
+                this.init();
+            }
+
+            init() {
+                this.createPlayerSetup();
+                this.bindEvents();
+                this.showSetupScreen();
+            }
+
+            createPlayerSetup() {
+                const container = document.getElementById('playerSetup');
+                container.innerHTML = '';
+                
+                for (let i = 0; i < 4; i++) {
+                    const playerCard = document.createElement('div');
+                    playerCard.className = 'player-card';
+                    playerCard.dataset.playerIndex = i;
+                    playerCard.innerHTML = `
+                        <h3>Player ${i + 1}</h3>
+                        <div class="player-colors">
+                            <div class="color-btn red" data-color="0"></div>
+                            <div class="color-btn green" data-color="1"></div>
+                            <div class="color-btn blue" data-color="2"></div>
+                            <div class="color-btn yellow" data-color="3"></div>
+                        </div>
+                        <input type="text" placeholder="Player Name" maxlength="12" class="player-name-input">
+                        <div style="margin-top: 10px; font-size: 14px; color: #666;">Select color & name</div>
+                    `;
+                    container.appendChild(playerCard);
+                }
+            }
+
+            bindEvents() {
+                // Setup events
+                document.getElementById('startGameBtn').addEventListener('click', () => this.startGame());
+                
+                document.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('color-btn')) {
+                        this.selectPlayerColor(e.target);
+                    }
+                });
+
+                // Game events
+                document.getElementById('rollBtn').addEventListener('click', () => this.rollDice());
+                document.getElementById('dice').addEventListener('click', () => this.rollDice());
+            }
+
+            selectPlayerColor(colorBtn) {
+                const playerCard = colorBtn.closest('.player-card');
+                const playerIndex = parseInt(playerCard.dataset.playerIndex);
+                
+                // Remove previous selections
+                playerCard.querySelectorAll('.color-btn').forEach(btn => btn.classList.remove('selected'));
+                colorBtn.classList.add('selected');
+                
+                // Update player data
+                const nameInput = playerCard.querySelector('.player-name-input');
+                this.players[playerIndex] = {
+                    index: playerIndex,
+                    color: parseInt(colorBtn.dataset.color),
+                    name: nameInput.value || `Player ${playerIndex + 1}`,
+                    pieces: Array(4).fill(null).map((_, i) => ({
+                        id: `${playerIndex}_${i}`,
+                        position: -1, // -1 = home
+                        homeIndex: i
+                    })),
+                    piecesInHome: 4
+                };
+                
+                this.updateStartButton();
+                playerCard.classList.add('active');
+            }
+
+            updateStartButton() {
+                const validPlayers = this.players.filter(p => p && p.color !== undefined);
+                const btn = document.getElementById('startGameBtn');
+                
+                btn.disabled = validPlayers.length < 2;
+                btn.textContent = validPlayers.length >= 2 ? 
+                    `Start Game (${validPlayers.length}/4 players)` : 
+                    'Need at least 2 players';
+            }
+
+            startGame() {
+                const activePlayers = this.players.filter(p => p);
+                this.players = activePlayers;
+                
+                document.getElementById('setupScreen').classList.remove('active');
+                document.getElementById('gameScreen').classList.add('active');
+                
+                this.createBoard();
+                this.updatePlayerInfo();
+                this.updateGameStatus();
+            }
+
+            createBoard() {
+                const board = document.getElementById('gameBoard');
+                board.innerHTML = '';
+                
+                // Home areas
+                this.createHomeAreas(board);
+                
+                // Path cells (52 cells)
+                this.createPathCells(board);
+            }
+
+            createHomeAreas(board) {
+                const homePositions = [
+                    {left: '4%', top: '4%', class: 'home-0'},
+                    {left: '68%', top: '4%', class: 'home-1'},
+                    {left: '68%', top: '68%', class: 'home-2'},
+                    {left: '4%', top: '68%', class: 'home-3'}
+                ];
+                
+                homePositions.forEach((pos, i) => {
+                    const home = document.createElement('div');
+                    home.className = `home-area ${pos.class}`;
+                    home.style.left = pos.left;
+                    home.style.top = pos.top;
+                    home.innerHTML = `<div style="width: 60%; height: 60%; border-radius: 50%; background: var(--color-${i});"></div>`;
+                    board.appendChild(home);
+                });
+            }
+
+            createPathCells(board) {
+                const pathPositions = this.generatePathCoordinates();
+                pathPositions.forEach((pos, index) => {
+                    const cell = document.createElement('div');
+                    cell.className = `path-cell ${index % 13 === 0 ? 'safe-cell' : ''}`;
+                    cell.style.left = `${pos.x}%`;
+                    cell.style.top = `${pos.y}%`;
+                    cell.dataset.cellIndex = index;
+                    board.appendChild(cell);
+                });
+            }
+
+            generatePathCoordinates() {
+                const positions = [];
+                // Simplified standard Ludo path (52 positions)
+                const path = [
+                    // Red path (0-12)
+                    ...Array(6).fill().map((_, i) => ({x: 40 + i*4, y: 92})),
+                    ...Array(6).fill().map((_, i) => ({x
