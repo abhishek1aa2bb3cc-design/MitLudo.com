@@ -1,0 +1,24 @@
+#ludo-board {
+    display: grid;
+    grid-template-columns: repeat(15, 40px);
+    grid-template-rows: repeat(15, 40px);
+    border: 5px solid #333;
+    margin: 20px auto;
+    width: 600px;
+}
+
+.cell {
+    border: 1px solid #ddd;
+    width: 40px;
+    height: 40px;
+}
+
+/* Base colors for start areas */
+.red { background-color: #ff4d4d; }
+.green { background-color: #2ecc71; }
+.yellow { background-color: #f1c40f; }
+.blue { background-color: #3498db; }
+
+.controls { text-align: center; font-family: sans-serif; }
+#dice-btn { padding: 10px 20px; font-size: 18px; cursor: pointer; }
+#dice-result { font-size: 24px; font-weight: bold; margin-top: 10px; }
